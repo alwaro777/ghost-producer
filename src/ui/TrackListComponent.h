@@ -11,7 +11,7 @@
 
 #include "model/ProjectState.h"
 #include "ui/Localisation.h"
-#include "ui/Theme.h"
+#include "Theme.h"
 
 namespace gp::ui {
 

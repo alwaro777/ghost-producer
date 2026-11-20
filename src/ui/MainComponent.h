@@ -12,7 +12,7 @@
 #include "app/AppServices.h"
 #include "commands/ProjectCommands.h"
 #include "model/Document.h"
-#include "ui/TrackListComponent.h"
+#include "TrackListComponent.h"
 
 namespace gp::ui {
 

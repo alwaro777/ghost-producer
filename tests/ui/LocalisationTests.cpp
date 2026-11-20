@@ -5,7 +5,7 @@
 #include "commands/ProjectCommands.h"
 #include "model/Document.h"
 #include "ui/Localisation.h"
-#include "ui/MainComponent.h"
+#include "../../src/ui/MainComponent.h"
 
 using namespace gp;
 

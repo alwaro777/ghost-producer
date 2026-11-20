@@ -1,5 +1,5 @@
 // MainComponent.cpp — panel principal de F0 (dueño: ui-ux). Hilo: mensajes.
-#include "ui/MainComponent.h"
+#include "MainComponent.h"
 
 #include <algorithm>
 #include <cmath>
@@ -7,7 +7,7 @@
 #include "commands/ProjectCommands.h"
 #include "model/ProjectState.h"
 #include "ui/Localisation.h"
-#include "ui/Theme.h"
+#include "Theme.h"
 
 namespace gp::ui {
 namespace {
