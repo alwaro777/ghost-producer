@@ -42,7 +42,8 @@ void styleLabel(juce::Label& l, const juce::String& t, juce::Font f, juce::Colou
     l.setMinimumHorizontalScale(1.0f);
 }
 
-void accessible(juce::Component& c, const juce::String& name, const juce::String& tip = {}) {
+template <class T>  // T hereda de SettableTooltipClient (Button, Slider, Label, ComboBox)
+void accessible(T& c, const juce::String& name, const juce::String& tip = {}) {
     c.setTitle(name);
     c.setDescription(tip.isEmpty() ? name : tip);
     if (tip.isNotEmpty())
