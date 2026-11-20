@@ -1,4 +1,4 @@
-Estado: HECHO (gate G5: NO PASA hasta cerrar 2 bloqueantes)
+Estado: HECHO · Vuelta 2: G5 PASA (B1, B2 e I1–I6 resueltos; 0 bloqueantes nuevos, 1 importante y 4 menores nuevos, ver «Vuelta 2»)
 Alcance: git diff 959b4e7..HEAD -- ':!docs/tareas' (73 archivos, +9053)
 Recuento: 2 BLOQUEANTES · 6 IMPORTANTES · 8 MENORES
 Bloqueos: B1 rutas no ASCII en Windows (ui-ux + arquitecto) · B2 «Guardar como» no crea la carpeta de proyecto (ui-ux)
@@ -132,3 +132,33 @@ No he repetido build ni tests (QA los validó en Linux, F0-T9-qa.informe.md).
   copia de seguridad antes de migrar y comprobación de `schemaVersion` tras cada paso.
 - **Licencias**: JUCE (AGPLv3), VST3 SDK (MIT), nlohmann (MIT), Catch2 (BSL-1.0) y CPM (MIT), todas
   compatibles y documentadas.
+
+---
+
+## Vuelta 2 (2026-11-20) — diff `9b5d358..HEAD` (F0-BUG1, BUG2 y BUG3)
+
+### Estado de la vuelta 1
+| Id | Estado | Comprobación |
+|---|---|---|
+| B1 rutas Unicode | RESUELTO | `src/app/PathUtils.h` convierte siempre por `u8string`/`toRawUTF8`. En `src/` ya no queda ningún `path::string()` ni ningún `path(std::string)`. `ProjectFile.cpp` usa `utf8()` y monta el nombre de la copia con operaciones de `path` (`:245-248`). Además, `saveProject`/`loadProject` capturan `std::exception` y ya no la propagan. Hay tests con «José/Canción ñ 日本» en el modelo y en la app. |
+| B2 carpeta de proyecto | RESUELTO | `paths::projectFileFor` convierte `X/Prueba` en `X/Prueba/Prueba.gpproj`. Si la carpeta ya existe, la app pide confirmación con su propio diálogo, que sustituye a `warnAboutOverwriting`. Lo cubre un test de estructura. |
+| I1 fsync | RESUELTO | `writeDurably` (`ProjectFile.cpp:75-141`) hace `F_FULLFSYNC` con `fsync` de respaldo, `FlushFileBuffers` en Windows y comprueba `close`. Tras el rename hace fsync de la carpeta en POSIX. El ADR 0002 está actualizado. |
+| I2 .tmp único | RESUELTO | `<archivo>.<pid>.<n>.tmp` se crea con `O_EXCL`/`CREATE_NEW` y hay un test con 4 hilos. |
+| I3 GP_RT_ASSERT_NOT_REALTIME | RESUELTO | Está en el modelo (save, load, notifyChanged), en `execute` y en el motor (setProject, timer, aboutToStart, stopped, publish, collectGarbage). Cada caso tiene su test. |
+| I4 aviso de migración | RESUELTO | `MainComponent::showNotice` muestra un aviso no modal con la ruta de la copia. Los textos están en `es.json`. |
+| I5 redo y transacciones | RESUELTO | El redo solo se vacía al hacer commit de una transacción no vacía (`CommandHistory.cpp:137`) y `clear()` revierte la transacción abierta y notifica el cambio. Hay tests. |
+| I6 tests | RESUELTO | `tests/ui/PathTests.cpp` y los casos Unicode y concurrentes de `ProjectFormatTests.cpp`. |
+
+Los menores de la vuelta 1 siguen abiertos (no estaban en el alcance de las tarjetas BUG) y no bloquean.
+
+### Hallazgos nuevos
+No hay bloqueantes nuevos. Las rutas de tiempo real no han cambiado: solo se han añadido asserts en funciones que no son RT.
+
+**IMPORTANTE**
+- N1 — `CMakeLists.txt:98-99`: `gp_model` y `gp_commands` llaman ahora a `gp::rt::isInRealtimeSection`/`reportViolation` (vía `GP_RT_ASSERT_NOT_REALTIME`), pero no declaran `DEPS gp_rt`. Hoy enlazan solo porque los consumidores (la app y las suites de tests) ponen `gp_rt` detrás en la línea de enlace. El primer ejecutable o herramienta que enlace `gp_model` sin `gp_rt` fallará con `GP_RT_CHECKS=ON`, que es el caso de dev, asan y headless. Dueño: arquitecto. Fix: `gp_add_module(gp_model src/model DEPS gp_rt)`.
+
+**MENORES**
+- N2 — `src/app/PathUtils.h:56-62`: `migrationBackupFor` duplica la regla de nombres de `loadProject` (`ProjectFile.cpp:245-248`). Si una de las dos cambia, el aviso mostrará una ruta falsa. Fix: añadir `backupFile` a `LoadResult`, un cambio de contrato que corresponde al arquitecto, y que la app lo use.
+- N3 — `src/app/PathUtils.h:45,50`: las comparaciones de la extensión y del nombre de carpeta distinguen mayúsculas. «Prueba.GPPROJ» da `Prueba.GPPROJ/Prueba.GPPROJ.gpproj`, y elegir `x/prueba/Prueba.gpproj` en un sistema de archivos insensible a mayúsculas crea `x/prueba/Prueba/`. Fix: comparar sin distinguir mayúsculas. Dueño: ui-ux.
+- N4 — `ProjectFile.cpp:196`: en Windows, `fs::rename` (MoveFileExW sin `MOVEFILE_WRITE_THROUGH`) no garantiza que el rename sea duradero. Los datos ya están a salvo, así que el riesgo es bajo. Fix: usar `MoveFileExW(..., MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)` o documentarlo en el ADR. Dueño: arquitecto.
+- N5 — `src/app/PathUtils.h:44-46`: con un nombre «.gpproj» (solo la extensión), `extension()` sale vacía y la ruta resultante es `.gpproj/.gpproj.gpproj`, una carpeta oculta en POSIX. Fix: rechazar nombres vacíos o que empiecen por punto. Dueño: ui-ux.
