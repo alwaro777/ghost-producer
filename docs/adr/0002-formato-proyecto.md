@@ -24,8 +24,14 @@ los usuarios: es la decisión más cara de revertir de F0.
 - **Validación estricta**: tipos y rangos (`model::limits`, `isValid`) se comprueban al cargar;
   nada se corrige en silencio. Claves desconocidas: se ignoran con aviso (compatibilidad hacia
   delante suave dentro de la misma versión).
-- **Guardado atómico**: `.tmp` + flush + rename sobre el destino. Un fallo nunca deja el archivo
-  anterior corrupto.
+- **Guardado atómico y duradero**: se escribe un `.tmp` de nombre único en la misma carpeta
+  (`<archivo>.<pid>.<contador>.tmp`, para que dos instancias o hilos no se pisen), se hace
+  `fsync` del archivo (`F_FULLFSYNC` en macOS, `FlushFileBuffers` en Windows), se comprueba el
+  `close`, se renombra sobre el destino y, en POSIX, se hace `fsync` de la carpeta. Un fallo
+  nunca deja el archivo anterior corrupto ni un `.tmp` huérfano.
+- **Rutas Unicode**: el modelo nunca usa `path::string()` ni construye `path` desde `std::string`
+  (en Windows usan la página ANSI). Los textos salen con `u8string()` y los nombres derivados se
+  montan con operaciones de `path`.
 - Los IDs son enteros < 2^53 (exactos en cualquier lector JSON).
 - Los tests de migración inyectan su propio `MigrationRegistry` y una versión objetivo; no se
   publican formatos ficticios.
