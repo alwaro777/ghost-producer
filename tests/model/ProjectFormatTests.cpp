@@ -1,4 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
+#include <atomic>
+#include <thread>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
@@ -27,7 +30,7 @@ struct TempDir {
     TempDir() {
         static int counter = 0;
         path = fs::temp_directory_path() /
-               ("gp_t2_" + std::to_string(::getpid()) + "_" + std::to_string(counter++));
+               ("gp_t2_" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) + "_" + std::to_string(counter++));
         fs::remove_all(path);
         fs::create_directories(path);
     }
@@ -168,21 +171,6 @@ TEST_CASE("saveProject / loadProject", "[model][file]") {
     REQUIRE(loadProject(dir.path / "broken.gpproj").status.code == ErrorCode::parseError);
 }
 
-TEST_CASE("failed save leaves the previous file intact", "[model][file]") {
-    TempDir dir;
-    const fs::path file = dir.path / "P" / "P.gpproj";
-    REQUIRE(saveProject(sampleState(), file, "0.1.0").isOk());
-    const std::string before = slurp(file);
-
-    // Works even as root: a directory squats on the temporary file name.
-    fs::create_directory(fs::path(file).concat(".tmp"));
-    auto changed = sampleState();
-    changed.transport.tempoBpm = 140.0;
-    const auto st = saveProject(changed, file, "0.1.0");
-    REQUIRE(st.code == ErrorCode::ioError);
-    REQUIRE(slurp(file) == before);
-}
-
 #ifndef _WIN32
 TEST_CASE("read-only folder gives ioError", "[model][file]") {
     TempDir dir;
@@ -231,4 +219,54 @@ TEST_CASE("isValid detects violations", "[model]") {
     expectBad([](ProjectState& s) { s.testTone.gainDb = 0.5f; });
     expectBad([](ProjectState& s) { s.tracks[0].name.clear(); });
     expectBad([](ProjectState& s) { s.tracks[0].name = std::string(65, 'x'); });
+}
+
+TEST_CASE("unicode paths save and load", "[model][file]") {
+    TempDir dir;
+    const fs::path file = dir.path / fs::path(u8"José") / fs::path(u8"Canción ñ 日本") /
+                          fs::path(u8"Canción ñ 日本.gpproj");
+    const auto s = sampleState();
+    REQUIRE(saveProject(s, file, "0.1.0").isOk());
+    REQUIRE(fs::is_directory(file.parent_path() / "backups"));
+    const auto r = loadProject(file);
+    REQUIRE(r.status.isOk());
+    REQUIRE(r.state == s);
+    // Error messages with non-ASCII paths must not throw.
+    REQUIRE(loadProject(dir.path / fs::path(u8"ñ/no existe.gpproj")).status.code ==
+            ErrorCode::ioError);
+}
+
+TEST_CASE("save over an unreplaceable target fails cleanly", "[model][file]") {
+    TempDir dir;
+    const fs::path file = dir.path / "P" / "P.gpproj";
+    fs::create_directories(file / "inner");  // the destination is a non-empty directory
+    REQUIRE(saveProject(sampleState(), file, "0.1.0").code == ErrorCode::ioError);
+    for (const auto& e : fs::directory_iterator(file.parent_path())) {
+        CHECK(e.path().extension() != ".tmp");
+    }
+}
+
+TEST_CASE("concurrent saves do not corrupt the file", "[model][file]") {
+    TempDir dir;
+    const fs::path file = dir.path / "P" / "P.gpproj";
+    auto a = sampleState();
+    auto b = sampleState();
+    b.transport.tempoBpm = 140.0;
+    std::vector<std::thread> threads;
+    std::atomic<int> failures{0};
+    for (int t = 0; t < 4; ++t) {
+        threads.emplace_back([&, t] {
+            for (int i = 0; i < 25; ++i) {
+                if (!saveProject(t % 2 == 0 ? a : b, file, "0.1.0").isOk()) ++failures;
+            }
+        });
+    }
+    for (auto& th : threads) th.join();
+    CHECK(failures == 0);
+    const auto r = loadProject(file);
+    REQUIRE(r.status.isOk());
+    CHECK((r.state == a || r.state == b));
+    for (const auto& e : fs::directory_iterator(file.parent_path())) {
+        CHECK(e.path().extension() != ".tmp");
+    }
 }

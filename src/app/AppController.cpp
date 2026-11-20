@@ -1,6 +1,8 @@
 // AppController.cpp — composición, menús, archivos (dueño: ui-ux). Hilo: mensajes.
 #include "AppController.h"
 
+#include "PathUtils.h"
+
 #include "commands/CommandHistory.h"
 #include "model/ProjectFile.h"
 #include "ui/Localisation.h"
@@ -26,9 +28,6 @@ const char* errorKey(ErrorCode code) {
     return "error.invalidArgument";
 }
 
-std::filesystem::path toPath(const juce::File& f) {
-    return std::filesystem::path(f.getFullPathName().toStdString());
-}
 
 }  // namespace
 
@@ -105,7 +104,7 @@ void AppController::historyChanged(const commands::CommandHistory&) {
 }
 
 std::string AppController::projectName() const {
-    return currentFile_.empty() ? ui::tr("window.untitled") : currentFile_.stem().string();
+    return currentFile_.empty() ? ui::tr("window.untitled") : paths::toUtf8(currentFile_.stem());
 }
 
 void AppController::updateTitle() {
@@ -168,29 +167,52 @@ bool AppController::writeTo(const std::filesystem::path& file) {
     }
     currentFile_ = file;
     history_.markSaved();
-    prefs_->setValue("lastProject", juce::String(file.string()));
+    prefs_->setValue("lastProject", paths::toJuceString(file));
     prefs_->saveIfNeeded();
     updateTitle();
     return true;
 }
 
 void AppController::chooseSavePath(std::function<void()> onSaved) {
-    juce::File initial = currentFile_.empty()
-                             ? juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
-                                   .getChildFile(juce::String::fromUTF8(projectName().c_str()))
-                             : juce::File(juce::String(currentFile_.string()));
+    const auto base = currentFile_.empty() ? std::filesystem::path{}
+                                           : currentFile_.parent_path().parent_path();
+    const juce::File initial =
+        currentFile_.empty()
+            ? juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
+                  .getChildFile(juce::String::fromUTF8(projectName().c_str()))
+            : paths::toFile(base / currentFile_.stem());
     chooser_ = std::make_unique<juce::FileChooser>(t("menu.file.saveAs"), initial, "*.gpproj");
-    chooser_->launchAsync(juce::FileBrowserComponent::saveMode |
-                              juce::FileBrowserComponent::canSelectFiles |
-                              juce::FileBrowserComponent::warnAboutOverwriting,
-                          [this, onSaved = std::move(onSaved)](const juce::FileChooser& fc) {
-                              auto file = fc.getResult();
-                              if (file == juce::File())
-                                  return;  // cancelado
-                              file = file.withFileExtension("gpproj");
-                              if (writeTo(toPath(file)) && onSaved)
-                                  onSaved();
-                          });
+    chooser_->launchAsync(
+        juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles,
+        [this, onSaved = std::move(onSaved)](const juce::FileChooser& fc) {
+            const auto chosen = fc.getResult();
+            if (chosen == juce::File())
+                return;  // cancelado
+            // ADR 0002: X/Prueba/Prueba.gpproj (las subcarpetas cuelgan de X/Prueba).
+            const auto target = paths::projectFileFor(paths::toPath(chosen));
+            std::error_code ec;
+            const bool folderExists = std::filesystem::exists(target.parent_path(), ec);
+            if (folderExists && target != currentFile_) {
+                const auto options =
+                    juce::MessageBoxOptions()
+                        .withIconType(juce::MessageBoxIconType::WarningIcon)
+                        .withTitle(juce::String::fromUTF8(
+                            ui::tr("dialog.overwrite.title",
+                                   {paths::toUtf8(target.parent_path().filename())})
+                                .c_str()))
+                        .withMessage(t("dialog.overwrite.message"))
+                        .withButton(t("dialog.overwrite.replace"), 1)
+                        .withButton(t("dialog.overwrite.cancel"), 0)
+                        .withAssociatedComponent(window_.get());
+                juce::AlertWindow::showAsync(options, [this, target, onSaved](int result) {
+                    if (result == 1 && writeTo(target) && onSaved)
+                        onSaved();
+                });
+                return;
+            }
+            if (writeTo(target) && onSaved)
+                onSaved();
+        });
 }
 
 void AppController::saveThen(std::function<void()> onSaved) {
@@ -222,17 +244,24 @@ void AppController::openProject() {
                 const auto file = fc.getResult();
                 if (file == juce::File())
                     return;
-                auto loaded = model::loadProject(toPath(file));
+                auto loaded = model::loadProject(paths::toPath(file));
                 if (!loaded.status.isOk()) {
                     showError("error.dialog.openTitle", loaded.status);  // el proyecto no cambia
                     return;
                 }
+                const bool migrated = loaded.migrated;
+                const int originalVersion = loaded.originalSchemaVersion;
                 document_.reset(std::move(loaded.state));
                 history_.clear();
-                currentFile_ = toPath(file);
-                prefs_->setValue("lastProject", juce::String(currentFile_.string()));
+                currentFile_ = paths::toPath(file);
+                prefs_->setValue("lastProject", paths::toJuceString(currentFile_));
                 prefs_->saveIfNeeded();
                 updateTitle();
+                if (migrated && window_ != nullptr)
+                    window_->showNotice(juce::String::fromUTF8(
+                        ui::tr("notice.migrated",
+                               {paths::toUtf8(paths::migrationBackupFor(currentFile_, originalVersion))})
+                            .c_str()));
             });
     });
 }

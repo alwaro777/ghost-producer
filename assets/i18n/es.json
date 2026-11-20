@@ -47,6 +47,13 @@
   "dialog.unsaved.discard": "No guardar",
   "dialog.unsaved.cancel": "Cancelar",
 
+  "dialog.overwrite.title": "La carpeta «{0}» ya existe",
+  "dialog.overwrite.message": "Si continúas, el proyecto se guardará dentro de esa carpeta y reemplazará el archivo de proyecto que haya.",
+  "dialog.overwrite.replace": "Reemplazar",
+  "dialog.overwrite.cancel": "Cancelar",
+
+  "notice.migrated": "Este proyecto se actualizó al formato actual. Guardamos una copia del original en: {0}",
+
   "panel.tone.title": "Tono de prueba",
   "panel.tone.enable": "Sonar",
   "panel.tone.enable.tip": "Activa un tono continuo para comprobar que oyes sonido.",

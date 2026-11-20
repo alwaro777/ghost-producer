@@ -26,6 +26,9 @@ public:
     void paint(juce::Graphics& g) override;
     void resized() override;
 
+    /// Aviso no modal sobre la barra de estado; se cierra con «Entendido».
+    void showNotice(const juce::String& text);
+
     /// Texto de los ítems de menú. {0} recibe tr(cmd.*) del último cambio; vacío si no hay
     /// historial (la app deshabilita el ítem y usa menu.edit.undo / menu.edit.redo).
     [[nodiscard]] static std::string undoMenuText(const commands::CommandHistory& history);
@@ -94,6 +97,10 @@ private:
     juce::TextButton bannerSettings_, bannerDismiss_;
     bool bannerDismissed_ = false;
     bool bannerShown_ = false;
+
+    juce::Label noticeLabel_;
+    juce::TextButton noticeDismiss_;
+    bool noticeShown_ = false;
 
     juce::Label deviceLabel_, cpuLabel_, peakLabel_, midiLabel_, rtLabel_;
     Meter meterL_, meterR_;

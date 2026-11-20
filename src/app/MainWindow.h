@@ -25,6 +25,12 @@ public:
         setVisible(true);
     }
 
+    /// Aviso no modal (p. ej. proyecto migrado).
+    void showNotice(const juce::String& text) {
+        if (auto* main = dynamic_cast<ui::MainComponent*>(getContentComponent()))
+            main->showNotice(text);
+    }
+
     void closeButtonPressed() override {
         if (onCloseRequested_)
             onCloseRequested_();

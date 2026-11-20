@@ -227,6 +227,21 @@ MainComponent::MainComponent(app::AppServices& services)
         updateBanner();
     };
 
+    // Aviso no modal
+    styleLabel(noticeLabel_, {}, theme::font::body(), col::textPrimary);
+    noticeDismiss_.setButtonText(text("error.dialog.ok"));
+    styleButton(noticeDismiss_);
+    accessible(noticeDismiss_, text("error.dialog.ok"));
+    noticeDismiss_.onClick = [this] {
+        noticeShown_ = false;
+        noticeLabel_.setVisible(false);
+        noticeDismiss_.setVisible(false);
+        resized();
+        repaint();
+    };
+    addChildComponent(noticeLabel_);
+    addChildComponent(noticeDismiss_);
+
     // Barra de estado
     for (auto* l : {&deviceLabel_, &cpuLabel_, &peakLabel_, &midiLabel_, &rtLabel_})
         styleLabel(*l, {}, theme::font::small(), col::textSecondary);
@@ -386,6 +401,15 @@ void MainComponent::refreshStatus(const engine::AudioDeviceStatus& device,
     updateBanner();
 }
 
+void MainComponent::showNotice(const juce::String& message) {
+    noticeLabel_.setText(message, juce::dontSendNotification);
+    noticeShown_ = true;
+    noticeLabel_.setVisible(true);
+    noticeDismiss_.setVisible(true);
+    resized();
+    repaint();
+}
+
 void MainComponent::paint(juce::Graphics& g) {
     g.fillAll(theme::colour::background);
     for (const auto& r : {transportPanel_, tonePanel_, tracksPanel_}) {
@@ -393,6 +417,11 @@ void MainComponent::paint(juce::Graphics& g) {
         g.fillRoundedRectangle(r.toFloat(), sp::cornerRadius);
         g.setColour(col::panelBorder);
         g.drawRoundedRectangle(r.toFloat().reduced(0.5f), sp::cornerRadius, 1.0f);
+    }
+    if (noticeShown_) {
+        g.setColour(col::banner);
+        g.fillRoundedRectangle(noticeLabel_.getBounds().getUnion(noticeDismiss_.getBounds())
+                                   .expanded(sp::s).toFloat(), sp::cornerRadius);
     }
     if (bannerShown_) {
         g.setColour(col::banner);
@@ -415,6 +444,14 @@ void MainComponent::resized() {
 
     auto status = area.removeFromBottom(sp::statusBarHeight);
     area.removeFromBottom(sp::s);
+
+    if (noticeShown_) {
+        auto notice = area.removeFromBottom(sp::bannerHeight).reduced(sp::m, sp::s);
+        area.removeFromBottom(sp::s);
+        noticeDismiss_.setBounds(notice.removeFromRight(sp::buttonWidth).withHeight(sp::controlHeight));
+        notice.removeFromRight(sp::s);
+        noticeLabel_.setBounds(notice);
+    }
 
     if (bannerShown_) {
         auto banner = area.removeFromTop(sp::bannerHeight).reduced(sp::m, sp::s);

@@ -6,6 +6,8 @@
 #include <utility>
 #include <vector>
 
+#include "rt/RtGuard.h"
+
 namespace gp::model {
 
 struct Document::Impl {
@@ -58,6 +60,7 @@ void Document::removeListener(Listener* listener) {
 ProjectState& Document::mutableState() noexcept { return impl_->state; }
 
 void Document::notifyChanged() {
+    GP_RT_ASSERT_NOT_REALTIME();
     impl_->checkThread();
     impl_->notify(*this);
 }

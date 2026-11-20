@@ -5,6 +5,7 @@
 #include <optional>
 
 #include "model/Document.h"
+#include "rt/RtGuard.h"
 
 namespace gp::commands {
 
@@ -43,14 +44,14 @@ CommandHistory::CommandHistory(model::Document& document)
 CommandHistory::~CommandHistory() = default;
 
 Status CommandHistory::execute(std::unique_ptr<Command> command, MergePolicy merge) {
+    GP_RT_ASSERT_NOT_REALTIME();
     if (!command) return Status::error(ErrorCode::invalidArgument, "null command");
     auto& s = *impl_;
     Status st = command->apply(s.doc.mutableState());
     if (!st.isOk()) return st;
 
     if (s.inTxn) {
-        s.txn.commands.push_back(std::move(command));
-        s.dropRedo();
+        s.txn.commands.push_back(std::move(command));  // redo is kept until a non-empty commit
         return Status::ok();
     }
 
@@ -133,6 +134,7 @@ void CommandHistory::commitTransaction() {
     if (!s.inTxn) return;
     s.inTxn = false;
     if (s.txn.commands.empty()) return;
+    s.dropRedo();
     s.undoStack.push_back(std::move(s.txn));
     s.txn = {};
     s.mergeable = false;
@@ -158,6 +160,12 @@ bool CommandHistory::inTransaction() const noexcept { return impl_->inTxn; }
 
 void CommandHistory::clear() {
     auto& s = *impl_;
+    if (s.inTxn) {  // abort the open transaction: leave the document consistent
+        auto& state = s.doc.mutableState();
+        for (auto it = s.txn.commands.rbegin(); it != s.txn.commands.rend(); ++it)
+            (*it)->revert(state);
+        if (!s.txn.commands.empty()) s.doc.notifyChanged();
+    }
     s.undoStack.clear();
     s.redoStack.clear();
     s.txn = {};
