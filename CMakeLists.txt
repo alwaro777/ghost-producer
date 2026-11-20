@@ -95,10 +95,11 @@ target_compile_definitions(gp_contracts INTERFACE
 
 # --- Módulos (ver mapa de propiedad en CLAUDE.md y docs/ARQUITECTURA.md) -----------------
 # Modelo y comandos: C++ puro, sin JUCE.
-gp_add_module(gp_model    src/model)
-gp_add_module(gp_commands src/commands  DEPS gp_model)
-# Motor: primitivas RT, núcleo de render (sin dispositivos) y capa de dispositivos.
-gp_add_module(gp_rt          src/engine/rt)
+# gp_rt va primero: modelo y comandos usan GP_RT_ASSERT_NOT_REALTIME (símbolos de gp_rt).
+gp_add_module(gp_rt       src/engine/rt)
+gp_add_module(gp_model    src/model     DEPS gp_rt)
+gp_add_module(gp_commands src/commands  DEPS gp_model gp_rt)
+# Motor: núcleo de render (sin dispositivos) y capa de dispositivos.
 gp_add_module(gp_engine_core src/engine/core DEPS gp_rt gp_model gp_juce)
 
 if(NOT GP_HEADLESS)
@@ -113,6 +114,13 @@ if(NOT GP_HEADLESS)
     endif()
 
     gp_add_module(gp_ui src/ui DEPS gp_commands gp_juce ${GP_ASSET_TARGETS})
+    # Permite `#include "ui/MainComponent.h"` desde src/app y tests (propuesta de F0-T6).
+    get_target_property(GP_UI_TYPE gp_ui TYPE)
+    if(GP_UI_TYPE STREQUAL "INTERFACE_LIBRARY")
+        target_include_directories(gp_ui INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+    else()
+        target_include_directories(gp_ui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
+    endif()
 
     # Aplicación (src/app). Se crea cuando existan sus fuentes.
     file(GLOB_RECURSE GP_APP_SOURCES CONFIGURE_DEPENDS
