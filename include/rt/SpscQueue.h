@@ -52,4 +52,55 @@ private:
 
 // ---- implementación (motor-audio, F0-T3) — solo definiciones debajo de esta línea ----
 
+// Índices monótonos (no se envuelven a Capacity): tail_ - head_ es el número de elementos y
+// cabe en [0, Capacity]. El desbordamiento de size_t es aritmética modular y sigue siendo
+// correcto porque Capacity es potencia de 2. Cada índice lo escribe un solo hilo: el dueño lo
+// lee con relaxed y publica con release; el otro lado lo lee con acquire.
+
+template <typename T, std::size_t Capacity>
+SpscQueue<T, Capacity>::SpscQueue() noexcept {}
+
+template <typename T, std::size_t Capacity>
+bool SpscQueue<T, Capacity>::tryPush(T&& value) noexcept {
+    const std::size_t tail = tail_.load(std::memory_order_relaxed);
+    const std::size_t head = head_.load(std::memory_order_acquire);
+    if (tail - head >= Capacity)
+        return false;  // llena: `value` no se toca
+    slots_[tail & (Capacity - 1)] = std::move(value);
+    tail_.store(tail + 1, std::memory_order_release);
+    return true;
+}
+
+template <typename T, std::size_t Capacity>
+bool SpscQueue<T, Capacity>::tryPush(const T& value) noexcept {
+    const std::size_t tail = tail_.load(std::memory_order_relaxed);
+    const std::size_t head = head_.load(std::memory_order_acquire);
+    if (tail - head >= Capacity)
+        return false;
+    slots_[tail & (Capacity - 1)] = value;
+    tail_.store(tail + 1, std::memory_order_release);
+    return true;
+}
+
+template <typename T, std::size_t Capacity>
+bool SpscQueue<T, Capacity>::tryPop(T& out) noexcept {
+    const std::size_t head = head_.load(std::memory_order_relaxed);
+    const std::size_t tail = tail_.load(std::memory_order_acquire);
+    if (head == tail)
+        return false;  // vacía: `out` no cambia
+    out = std::move(slots_[head & (Capacity - 1)]);
+    head_.store(head + 1, std::memory_order_release);
+    return true;
+}
+
+template <typename T, std::size_t Capacity>
+std::size_t SpscQueue<T, Capacity>::sizeApprox() const noexcept {
+    // head primero: tail solo crece y nunca es menor que head, así que tail - head >= 0.
+    const std::size_t head = head_.load(std::memory_order_acquire);
+    const std::size_t tail = tail_.load(std::memory_order_acquire);
+    const std::size_t size = tail - head;
+    return size > Capacity ? Capacity : size;
+}
+
+
 }  // namespace gp::rt
