@@ -176,7 +176,7 @@ void CommandHistory::markSaved() {
 
 bool CommandHistory::isDirty() const noexcept {
     const auto& s = *impl_;
-    return !(s.savedPos && *s.savedPos == s.undoStack.size()) || s.inTxn;
+    return !(s.savedPos && *s.savedPos == s.undoStack.size()) || (s.inTxn && !s.txn.commands.empty());
 }
 
 std::vector<HistoryEntryInfo> CommandHistory::undoEntries() const {

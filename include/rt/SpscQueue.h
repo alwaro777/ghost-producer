@@ -66,7 +66,7 @@ bool SpscQueue<T, Capacity>::tryPush(T&& value) noexcept {
     const std::size_t head = head_.load(std::memory_order_acquire);
     if (tail - head >= Capacity)
         return false;  // llena: `value` no se toca
-    slots_[tail & (Capacity - 1)] = std::move(value);
+    slots_[tail & (Capacity - 1)] = static_cast<T&&>(value);
     tail_.store(tail + 1, std::memory_order_release);
     return true;
 }
@@ -88,7 +88,7 @@ bool SpscQueue<T, Capacity>::tryPop(T& out) noexcept {
     const std::size_t tail = tail_.load(std::memory_order_acquire);
     if (head == tail)
         return false;  // vacía: `out` no cambia
-    out = std::move(slots_[head & (Capacity - 1)]);
+    out = static_cast<T&&>(slots_[head & (Capacity - 1)]);
     head_.store(head + 1, std::memory_order_release);
     return true;
 }
