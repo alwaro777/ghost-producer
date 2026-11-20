@@ -4,11 +4,13 @@
 /// Document y emite Commands vía CommandHistory; del motor solo lee deviceStatus() y
 /// takeMetrics(). Hilo: mensajes.
 
+#include <memory>
 #include <string>
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
 #include "app/AppServices.h"
+#include "commands/ProjectCommands.h"
 #include "model/Document.h"
 #include "ui/TrackListComponent.h"
 
@@ -65,11 +67,14 @@ private:
     void run(std::unique_ptr<commands::Command> command, commands::MergePolicy merge,
              juce::Label& errorLabel);
     void applyTempoText();
-    void applyTimeSignature();
+    void applyTimeSignature(int numerator, int denominator);
+    void applyNumeratorText();
     void updateBanner();
-    void layoutSliderRow(juce::Rectangle<int> area, juce::Label& name, juce::Component& control);
+    void paintOverChildren(juce::Graphics& g) override;
+    void focusOfChildComponentChanged(FocusChangeType) override { repaint(); }
 
     app::AppServices& services_;
+    juce::Rectangle<int> transportPanel_, tonePanel_, tracksPanel_;
 
     juce::Label transportTitle_, tempoName_, tempoUnit_, timeSigName_, timeSigSlash_, transportError_;
     juce::Label tempoValue_, timeSigNumerator_;
