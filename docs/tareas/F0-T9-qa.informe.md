@@ -41,3 +41,11 @@ tsan usa GP_RT_CHECKS=OFF (el hook global de new/delete interfiere con TSan), as
 - Sin carga DSP medida (F0 no tiene benchmark; el estrés 64 pistas/20 dispositivos no aplica aún: no hay pistas con audio).
 - Sin golden de render con hash: la matriz usa umbrales de nivel; T4 ya compara bloques bit a bit. Golden con referencia binaria queda para F1.
 - Bugs F0-BUG{k}: ninguno.
+
+## Re-verificación (tras F0-BUG1, BUG2 y BUG3)
+Borrados build/bug*; presets estándar desde cero. Todo verde, 0 warnings, 0 bugs nuevos:
+- dev: 65/65 (66/66 con el test nuevo); smoke test con xvfb rc=0. headless: 52/52 (53 con el nuevo). headless+ASan/UBSan: 52/52. tsan: 52/52 (10 SKIP: detector T3 + matriz; esperado). 1 SKIP root en todos.
+- BUG3: "setProject dentro de sección RT registra violación" (tests/engine/device) pasa en dev; también los de publish/collectGarbage del núcleo.
+- Regresión B1 existente: tests/model "unicode paths save and load" (José/Canción ñ 日本) y tests/ui/PathTests.cpp (ida y vuelta juce<->path). B2 (I6) existente: PathTests "projectFileFor" y "Guardar como crea la estructura" (X/Prueba/Prueba.gpproj, subcarpetas solo dentro, nada colgando de X).
+- Hueco cubierto: añadido tests/integration/UnicodePathTests.cpp (core, headless): carpeta de proyecto con nombre no ASCII + subcarpetas, nada fuera de ella, y loadProject de ruta Unicode inexistente -> error sin excepción y mensaje UTF-8 válido. Pasa.
+- Siguen sin poder verificarse aquí: Windows (donde se manifestaba B1) y macOS; el diálogo real de «Guardar como» (la lógica de ruta está testeada, el flujo GUI no). La regresión B1 solo es concluyente cuando corra el job Windows de CI.
