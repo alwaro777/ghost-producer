@@ -23,7 +23,7 @@ TEST_CASE("projectFileFor: X/Prueba -> X/Prueba/Prueba.gpproj", "[ui][paths]") {
     // Ya dentro de la carpeta del proyecto: se respeta.
     CHECK(paths::projectFileFor("/x/Prueba/Prueba.gpproj") == fs::path("/x/Prueba/Prueba.gpproj"));
     // Nombres con punto no pierden el sufijo.
-    CHECK(paths::projectFileFor("/x/Mix v2") == fs::path("/x/Mix v2/Mix v2.gpproj"));
+    CHECK(paths::projectFileFor("/x/Mix.v2") == fs::path("/x/Mix.v2/Mix.v2.gpproj"));
 }
 
 TEST_CASE("migrationBackupFor sigue el ADR 0002", "[ui][paths]") {
