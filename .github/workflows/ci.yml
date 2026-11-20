@@ -50,11 +50,20 @@ jobs:
           cmake --preset dev -DGP_WARNINGS_AS_ERRORS=ON
           cmake --build --preset dev
           ctest --preset dev
+      - name: dev — smoke test de la app
+        run: build/dev/GhostProducerApp_artefacts/Debug/GhostProducer.app/Contents/MacOS/GhostProducer --smoke-test
+        timeout-minutes: 2
       - name: asan — configurar, compilar, testear
         run: |
           cmake --preset asan -DGP_WARNINGS_AS_ERRORS=ON
           cmake --build --preset asan
           ctest --preset asan
+      - name: asan — smoke test de la app
+        env:
+          ASAN_OPTIONS: detect_leaks=0:abort_on_error=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+        run: build/asan/GhostProducerApp_artefacts/Debug/GhostProducer.app/Contents/MacOS/GhostProducer --smoke-test
+        timeout-minutes: 2
 
   macos-release:
     name: macOS release universal (arm64 + x86_64, macOS 12+)
