@@ -78,7 +78,6 @@ bool CommandHistory::canRedo() const noexcept { return !impl_->inTxn && !impl_->
 
 bool CommandHistory::undo() {
     auto& s = *impl_;
-    assert(!s.inTxn);
     if (!canUndo()) return false;
     Entry e = std::move(s.undoStack.back());
     s.undoStack.pop_back();
@@ -93,7 +92,6 @@ bool CommandHistory::undo() {
 
 bool CommandHistory::redo() {
     auto& s = *impl_;
-    assert(!s.inTxn);
     if (!canRedo()) return false;
     Entry e = std::move(s.redoStack.back());
     s.redoStack.pop_back();
