@@ -1,0 +1,81 @@
+# CI de GhostProducer (esqueleto F0, dueño: qa a partir de F0-T9). Ver docs/adr/0001-stack.md.
+# Orden de prioridad: macOS (plataforma principal) → Linux headless (tests rápidos) → Windows.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/.cpm-cache
+
+jobs:
+  macos:
+    name: macOS (dev + ASan/UBSan)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .cpm-cache
+          key: cpm-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
+      - name: Instalar Ninja
+        run: brew install ninja
+      - name: dev — configurar, compilar, testear
+        run: |
+          cmake --preset dev -DGP_WARNINGS_AS_ERRORS=ON
+          cmake --build --preset dev
+          ctest --preset dev
+      - name: asan — configurar, compilar, testear
+        run: |
+          cmake --preset asan -DGP_WARNINGS_AS_ERRORS=ON
+          cmake --build --preset asan
+          ctest --preset asan
+
+  linux-headless:
+    name: Linux headless (tests + ASan + TSan)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .cpm-cache
+          key: cpm-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
+      - name: Instalar Ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - name: headless
+        run: |
+          cmake --preset headless
+          cmake --build --preset headless
+          ctest --preset headless
+      - name: headless + ASan/UBSan
+        run: |
+          cmake --preset headless -B build/headless-asan -DGP_SANITIZERS=address,undefined
+          cmake --build build/headless-asan
+          ctest --test-dir build/headless-asan --output-on-failure
+      - name: tsan
+        run: |
+          cmake --preset tsan
+          cmake --build --preset tsan
+          ctest --preset tsan
+
+  windows:
+    name: Windows (dev)
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .cpm-cache
+          key: cpm-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: dev — configurar, compilar, testear
+        run: |
+          cmake --preset dev -DGP_WARNINGS_AS_ERRORS=ON
+          cmake --build --preset dev
+          ctest --preset dev

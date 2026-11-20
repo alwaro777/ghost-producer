@@ -1,0 +1,77 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 25, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "GP_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "dev",
+      "displayName": "Debug + detector RT",
+      "inherits": "base",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "GP_RT_CHECKS": "ON" }
+    },
+    {
+      "name": "asan",
+      "displayName": "Debug + ASan/UBSan + detector RT",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "GP_RT_CHECKS": "ON",
+        "GP_SANITIZERS": "address,undefined"
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Release (sin detector RT)",
+      "inherits": "base",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "GP_RT_CHECKS": "OFF" }
+    },
+    {
+      "name": "headless",
+      "displayName": "Linux CI: solo modelo, comandos y núcleo del motor",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "GP_HEADLESS": "ON",
+        "GP_RT_CHECKS": "ON",
+        "GP_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
+      "name": "tsan",
+      "displayName": "Headless + ThreadSanitizer (tests de concurrencia)",
+      "inherits": "headless",
+      "cacheVariables": { "GP_SANITIZERS": "thread", "GP_RT_CHECKS": "OFF" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "dev", "configurePreset": "dev" },
+    { "name": "asan", "configurePreset": "asan" },
+    { "name": "release", "configurePreset": "release" },
+    { "name": "headless", "configurePreset": "headless" },
+    { "name": "tsan", "configurePreset": "tsan" }
+  ],
+  "testPresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "ignore" }
+    },
+    { "name": "dev", "inherits": "base", "configurePreset": "dev" },
+    { "name": "asan", "inherits": "base", "configurePreset": "asan",
+      "environment": { "ASAN_OPTIONS": "detect_leaks=0:abort_on_error=1", "UBSAN_OPTIONS": "print_stacktrace=1:halt_on_error=1" } },
+    { "name": "release", "inherits": "base", "configurePreset": "release" },
+    { "name": "headless", "inherits": "base", "configurePreset": "headless" },
+    { "name": "tsan", "inherits": "base", "configurePreset": "tsan",
+      "environment": { "TSAN_OPTIONS": "halt_on_error=1" } }
+  ]
+}

@@ -39,11 +39,14 @@ cambio en tu informe.
    documentan en `THIRD_PARTY.md`.
 
 ## Comandos
-- Configurar: `cmake --preset dev`
+- Configurar: `cmake --preset dev` (presets: `dev`, `asan`, `release`, `headless`, `tsan`)
 - Compilar: `cmake --build --preset dev`
-- Tests: `ctest --preset dev --output-on-failure`
-- Ejecutar: `./build/dev/App`
-(El arquitecto mantiene esta sección al día en la Fase 0.)
+- Tests: `ctest --preset dev` (salida de fallos activada en el preset)
+- Ejecutar (macOS): `open build/dev/GhostProducerApp_artefacts/Debug/GhostProducer.app`
+- Ejecutar (Windows): `build\dev\GhostProducerApp_artefacts\Debug\GhostProducer.exe`
+- En este contenedor Linux (sin GUI): `cmake --preset headless && cmake --build --preset headless && ctest --preset headless`
+- Caché de dependencias: exporta `CPM_SOURCE_CACHE=$HOME/.cache/CPM` para no reclonar JUCE.
+(El arquitecto mantiene esta sección al día.)
 
 ## Estilo
 clang-format del repo · nombres en inglés en el código · docs y textos de UI en español

@@ -1,0 +1,9 @@
+/build/
+/.cpm-cache/
+/out/
+.DS_Store
+.vscode/
+.idea/
+*.swp
+compile_commands.json
+CMakeUserPresets.json
