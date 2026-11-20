@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstring>
 
+#include "rt/RtGuard.h"
 #include "rt/SnapshotExchange.h"
 
 namespace gp::engine {
@@ -54,10 +55,14 @@ public:
     void release() override { resetState(); }
 
     void publish(std::unique_ptr<const EngineSnapshot> snapshot) override {
+        GP_RT_ASSERT_NOT_REALTIME();
         exchange_.publish(std::move(snapshot));
     }
 
-    void collectGarbage() override { exchange_.collectGarbage(); }
+    void collectGarbage() override {
+        GP_RT_ASSERT_NOT_REALTIME();
+        exchange_.collectGarbage();
+    }
 
     void process(float* const* outputs, int numChannels, int numSamples) noexcept override {
         if (numChannels <= 0 || numSamples <= 0)

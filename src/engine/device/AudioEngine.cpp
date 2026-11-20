@@ -82,6 +82,7 @@ public:
     }
 
     void setProject(const model::ProjectState& state, std::uint64_t documentRevision) override {
+        GP_RT_ASSERT_NOT_REALTIME();
         const EngineSnapshot snap = buildSnapshot(state, documentRevision);
         const juce::ScopedLock sl(writerLock_);
         lastSnapshot_ = snap;
@@ -126,12 +127,14 @@ private:
     void startHousekeeping() { startTimerHz(kGarbageTimerHz); }
 
     void timerCallback() override {
+        GP_RT_ASSERT_NOT_REALTIME();
         const juce::ScopedLock sl(writerLock_);
         core_->collectGarbage();
     }
 
     // ---- AudioIODeviceCallback ----
     void audioDeviceAboutToStart(juce::AudioIODevice* device) override {
+        GP_RT_ASSERT_NOT_REALTIME();
         const double sr = device->getCurrentSampleRate();
         const int block = std::max(1, device->getCurrentBufferSizeSamples());
         const int outs = device->getActiveOutputChannels().countNumberOfSetBits();
@@ -153,6 +156,7 @@ private:
     }
 
     void audioDeviceStopped() override {
+        GP_RT_ASSERT_NOT_REALTIME();
         const juce::ScopedLock sl(writerLock_);
         core_->release();
     }

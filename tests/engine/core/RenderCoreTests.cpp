@@ -175,3 +175,24 @@ TEST_CASE("takePeaks devuelve y pone a cero; mono: right == left") {
     CHECK(z.left == 0.0f);
     CHECK(z.right == 0.0f);
 }
+
+TEST_CASE("publish y collectGarbage dentro de sección RT registran violación") {
+    if (!rt::checksEnabled()) SUCCEED("detector desactivado en esta build");
+    else {
+        auto core = createRenderCore();
+        core->prepare({48000.0, 64, 2});
+        rt::resetViolationCount();
+        {
+            rt::ScopedRealtimeSection section;
+            core->collectGarbage();
+        }
+        CHECK(rt::violationCount() >= 1);
+        rt::resetViolationCount();
+        {
+            rt::ScopedRealtimeSection section;
+            core->publish(snap(true, 440.0, 0.0f));
+        }
+        CHECK(rt::violationCount() >= 1);
+        rt::resetViolationCount();
+    }
+}

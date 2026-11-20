@@ -55,3 +55,22 @@ TEST_CASE("initialise vacio no lanza y deja el motor utilizable") {
     (void)engine->takeMetrics();
     engine->shutdown();
 }
+
+#include "rt/RtGuard.h"
+
+TEST_CASE("setProject dentro de sección RT registra violación") {
+    JuceInit juceInit;
+    auto engine = createAudioEngine();
+    (void)engine->initialise("");
+    if (!rt::checksEnabled()) SUCCEED("detector desactivado");
+    else {
+        rt::resetViolationCount();
+        {
+            rt::ScopedRealtimeSection section;
+            engine->setProject(model::ProjectState{}, 1);
+        }
+        CHECK(rt::violationCount() >= 1);
+        rt::resetViolationCount();
+    }
+    engine->shutdown();
+}
