@@ -213,16 +213,13 @@ TEST_CASE("RtGuard: el detector es por hilo", "[rt]") {
         block[0] = 1;
         done.store(true, std::memory_order_release);
     });
-    bool otherWasRt = true;
     {
         gp::rt::ScopedRealtimeSection rt;  // solo este hilo es RT
         go.store(true, std::memory_order_release);
         while (!done.load(std::memory_order_acquire)) {
         }
-        otherWasRt = false;
     }
     other.join();
-    REQUIRE_FALSE(otherWasRt);
     REQUIRE(gp::rt::violationCount() == 0);
 }
 
