@@ -17,7 +17,7 @@ struct ParseFailure {
     throw ParseFailure{Status::error(ErrorCode::parseError, msg)};
 }
 
-const json& need(const json& obj, const char* key, const std::string& where) {
+const json& need(const json& obj, const char* key, const char* where) {
     const auto it = obj.find(key);
     if (it == obj.end()) {
         bad("missing key '" + std::string(key) + "' in " + where);
@@ -25,7 +25,7 @@ const json& need(const json& obj, const char* key, const std::string& where) {
     return *it;
 }
 
-const json& needObject(const json& obj, const char* key, const std::string& where) {
+const json& needObject(const json& obj, const char* key, const char* where) {
     const json& v = need(obj, key, where);
     if (!v.is_object()) {
         bad("'" + std::string(key) + "' in " + where + " must be an object");
