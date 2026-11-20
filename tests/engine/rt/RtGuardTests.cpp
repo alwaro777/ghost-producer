@@ -107,7 +107,7 @@ TEST_CASE("RtGuard: todas las variantes de new/delete se detectan", "[rt]") {
         void* volatile h = ::operator new[](16, std::align_val_t{64}, std::nothrow);
         ::operator delete[](h, std::align_val_t{64}, std::nothrow);
         void* volatile i = ::operator new(8);
-        ::operator delete(i, std::size_t{8});
+        ::operator delete(i);  // sized: implícita en `delete b` con -fsized-deallocation
         delete static_cast<int*>(nullptr);  // liberar nullptr no cuenta
         count = gp::rt::violationCount();
     }
