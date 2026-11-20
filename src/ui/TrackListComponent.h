@@ -50,7 +50,7 @@ public:
         });
     }
 
-    /// Alto deseado según el número de pistas (para que el padre dimensione la lista).
+    /// Se llama tras reconstruir las filas (el padre puede reajustar la altura).
     std::function<void()> onContentChanged;
 
     int preferredHeight() const {
