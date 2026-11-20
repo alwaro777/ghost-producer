@@ -12,7 +12,7 @@ con Modo Principiante e IA integrada. Identidad, nombres de dispositivos y conte
   `docs/tareas/` (tarjetas e informes).
 
 ## Stack
-C++20 · CMake + Ninja · JUCE 8 · VST3/AU/CLAP · ONNX Runtime · Catch2 · GitHub Actions.
+C++20 · CMake + Ninja · JUCE 9 · VST3/AU/CLAP · ONNX Runtime · Catch2 · GitHub Actions.
 
 ## Mapa de propiedad (quién puede editar qué)
 | Ruta | Dueño |

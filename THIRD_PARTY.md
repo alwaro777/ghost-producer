@@ -8,7 +8,7 @@ ANTES de usarla, con versión fijada y la comprobación de compatibilidad.
 
 | Componente | Versión fijada | Licencia | Compatible AGPLv3 | Uso |
 |---|---|---|---|---|
-| JUCE | 8.0.17-security (`e548e97a54a083acbfc330d584419fd074409045`) | AGPLv3 / comercial | Sí (misma) | Audio I/O, MIDI, UI, futuras cargas de plugins |
+| JUCE | 9.0.6 (`654bdbc7a9db0dae90849b44abe91f339e9f0768`) | AGPLv3 / comercial | Sí (misma) | Audio I/O, MIDI, UI, futuras cargas de plugins |
 | VST3 SDK (dentro de JUCE) | 3.8.x | MIT | Sí | Hosting VST3 (F3) |
 | nlohmann/json | v3.12.0 (`55f93686c01528224f448c19128836e7df245f72`) | MIT | Sí | Formato de proyecto, Commands |
 | Catch2 | v3.16.1 (`08092139210881f01a34e60c5f2fd6afa0ea4024`) | BSL-1.0 | Sí | Tests (no se distribuye) |
@@ -19,6 +19,9 @@ Notas:
 - Los módulos de JUCE incluyen sus propias dependencias (p. ej. HarfBuzz, FLAC, Ogg/Vorbis); sus
   avisos se recopilarán en un `NOTICES` generado al empaquetar (tarea de release, F12).
 
+## Contribuciones
+AGPLv3 + DCO (`Signed-off-by` en cada commit, sin CLA). Ver `CONTRIBUTING.md` y ADR 0001.
+
 ## Previstas (se revisan y fijan al integrarlas)
 
 | Componente | Fase | Licencia | Compatible AGPLv3 |
@@ -28,7 +31,7 @@ Notas:
 | Signalsmith Stretch | F6 | MIT | Sí |
 | Rubber Band Library (R3) | F6 | GPLv2+ / comercial | Sí, usado bajo GPLv3 |
 | ONNX Runtime | F10 | MIT | Sí |
-| ASIO SDK (Windows) | por decidir | GPLv3 / propietaria (verificar) | Sí si es GPLv3 |
+| ASIO SDK (Windows) | pendiente (F0 usa WASAPI) | GPLv3 / propietaria (revisar al integrarlo) | Sí solo bajo GPLv3 |
 | tracktion_graph (solo evaluación) | F1/F5 | GPLv3 / comercial | Sí |
 
 ## Prohibidas

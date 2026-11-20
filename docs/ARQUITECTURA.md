@@ -42,7 +42,7 @@ El modelo y los comandos son C++ puro, sin JUCE.
 | `gp_engine_device` | `src/engine/device/` | gp_engine_core | motor-audio |
 | `gp_ui` | `src/ui/` | gp_commands, gp_juce, gp_assets | ui-ux |
 | `GhostProducerApp` | `src/app/` | todo lo anterior | ui-ux (composición) |
-| `gp_juce` | (JUCE 8, una sola compilación) | — | arquitecto |
+| `gp_juce` | (JUCE 9, una sola compilación) | — | arquitecto |
 | `gp_tests_core` / `gp_tests_gui` | `tests/` | — | qa |
 
 Cada módulo recoge sus `.cpp` por glob: añadir archivos no exige tocar CMake. `GP_HEADLESS=ON`

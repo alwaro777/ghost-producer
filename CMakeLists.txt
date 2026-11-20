@@ -26,7 +26,7 @@ gp_enable_sanitizers("${GP_SANITIZERS}")
 # Usa CPM_SOURCE_CACHE (variable de entorno o -D) para no volver a clonar.
 include(CPM)
 
-# En headless no se construye juceaide (en Linux exige cabeceras X11): solo módulos.
+# En headless no se construye juceaide (en Linux exige cabeceras X11/XInput): solo módulos.
 if(GP_HEADLESS)
     set(GP_JUCE_OPTIONS "JUCE_MODULES_ONLY ON")
 else()
@@ -35,7 +35,7 @@ endif()
 CPMAddPackage(
     NAME JUCE
     GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
-    GIT_TAG 8.0.17-security  # e548e97a54a083acbfc330d584419fd074409045
+    GIT_TAG 9.0.6  # 654bdbc7a9db0dae90849b44abe91f339e9f0768
     GIT_SHALLOW TRUE
     OPTIONS "${GP_JUCE_OPTIONS}")
 
@@ -55,7 +55,7 @@ if(GP_BUILD_TESTS)
     list(APPEND CMAKE_MODULE_PATH "${Catch2_SOURCE_DIR}/extras")  # include(Catch)
 endif()
 
-# --- JUCE como UNA librería estática compartida -------------------------------------------
+# --- JUCE 9 como UNA librería estática compartida -------------------------------------------
 # Los módulos JUCE son librerías INTERFACE con fuentes: si varios targets los enlazan, se
 # compilan varias veces (símbolos duplicados). Todos nuestros targets enlazan gp_juce.
 if(GP_HEADLESS)

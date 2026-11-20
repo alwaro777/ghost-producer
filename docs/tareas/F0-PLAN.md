@@ -67,25 +67,18 @@ raíz ni `include/` (salvo T3, por ampliación explícita, debajo de los marcado
 | ASan + hook de `new` + JUCE en macOS arm64 | Falsos positivos o leaks no soportados | `detect_leaks=0` en macOS; leaks se comprueban en Linux |
 | Clics al cambiar frecuencia/ganancia | Mala primera impresión | Rampas y fase continua como criterio de T4 con test numérico |
 | Fusión de gestos mal hecha (un arrastre = 100 undos o undo erróneo) | Deshacer confuso | Criterios explícitos en T1 y prueba manual |
-| JUCE 8 frente a 9 | Migración posterior | Pregunta 1 al usuario |
+| Cambios de API de JUCE 9 (p. ej. `MessageBoxOptions::withButton` exige código de resultado, `NativeMessageBox` renombrado) | T6 no compila con ejemplos antiguos | Nota en T6: seguir BREAKING_CHANGES.md de JUCE 9.0.x |
 | Tiempos de clonado de JUCE en CI | CI lenta | Caché de `CPM_SOURCE_CACHE` |
 
 ## Fuera de alcance de F0
 Transporte con reproducción, clips, pistas de audio, plugins, autoguardado, recuperación,
 temas claros, Modo Principiante, IA.
 
-## Preguntas al usuario (decisiones caras que siguen abiertas)
-1. **JUCE 8 frente a JUCE 9.** Fijamos JUCE 8.0.17-security como pediste. Ya existe JUCE 9.0.6
-   (misma licencia AGPLv3), con una implementación nueva de CoreAudio y correcciones de CoreAudio
-   y MIDI que interesan en macOS. Cambiar ahora cuesta una línea; después de F3 (plugins) costará
-   bastante más. ¿Seguimos con 8 o pasamos a 9 antes de F1?
-2. **Contribuciones y licencia futura.** ¿Quieres conservar la opción de una doble licencia
-   comercial más adelante? Eso exige un CLA para contribuidores externos desde el principio
-   (y licencias comerciales de JUCE, Link y Rubber Band). Con AGPLv3 + DCO, la licencia queda
-   AGPLv3 para siempre. Consecuencia en ambos casos: no hay Mac App Store, sino descarga directa
-   firmada y notarizada.
-3. **macOS mínimo y arquitecturas.** Hemos puesto macOS 12 como mínimo y compilación nativa
-   (arm64 en tu Mac). ¿Las releases deben ser universales (arm64 + x86_64) y qué macOS mínimo
-   quieres soportar?
-4. **ASIO en Windows.** WASAPI basta en F0. ¿Quieres soporte ASIO en una fase posterior
-   (añade el SDK de Steinberg; hay que verificar su licencia GPLv3 al integrarlo) o solo WASAPI?
+## Decididas por el usuario (antes «Preguntas al usuario»)
+1. **JUCE 9.0.6** en lugar de 8.0.17 (pin en `CMakeLists.txt`, commit `654bdbc7`). Verificado:
+   el preset `headless` configura, compila y pasa el test Catch2 de prueba.
+2. **AGPLv3 + DCO**, sin CLA: `CONTRIBUTING.md` y un job `dco` en la CI que exige
+   `Signed-off-by`. Sin Mac App Store: descarga directa firmada y notarizada.
+3. **macOS 12+**; `dev`/`asan` nativos; `release` universal (arm64 + x86_64) en el preset y en el
+   job `macos-release` de la CI.
+4. **WASAPI en F0, ASIO más adelante**, tras revisar la licencia del SDK (ADR 0001 § Pendientes).

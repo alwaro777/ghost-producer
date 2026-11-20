@@ -11,6 +11,8 @@ Nuevo/Abrir/Guardar/Guardar como/Deshacer/Rehacer/Ajustes de audio y tiene `--sm
 - include/commands/CommandHistory.h, include/engine/AudioEngine.h
 - docs/specs/ux/F0-ventana-principal.md (de T8)
 - src/ui/MainComponent.h (de T7: solo su constructor)
+- JUCE 9.0.x `BREAKING_CHANGES.md` § cuadros de diálogo (`MessageBoxOptions::withButton` con código
+  de resultado, `NativeMessageBox` renombrado), solo si un diálogo no compila
 
 ## Puedes editar
 - src/app/** (Main.cpp, AppController.h/.cpp, MainWindow.h/.cpp, AudioSettingsDialog.cpp)

@@ -1,5 +1,6 @@
 # CI de GhostProducer (esqueleto F0, dueño: qa a partir de F0-T9). Ver docs/adr/0001-stack.md.
 # Orden de prioridad: macOS (plataforma principal) → Linux headless (tests rápidos) → Windows.
+# dev/asan compilan en la arquitectura nativa del runner; release es universal.
 name: ci
 
 on:
@@ -15,6 +16,24 @@ env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/.cpm-cache
 
 jobs:
+  dco:
+    name: DCO (Signed-off-by en cada commit)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Comprobar Signed-off-by
+        run: |
+          fail=0
+          for c in $(git rev-list --no-merges ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}); do
+            if ! git log -1 --format=%B "$c" | grep -qE '^Signed-off-by: .+ <.+>$'; then
+              echo "::error::El commit $c no tiene Signed-off-by (ver CONTRIBUTING.md)"; fail=1
+            fi
+          done
+          exit $fail
+
   macos:
     name: macOS (dev + ASan/UBSan)
     runs-on: macos-15
@@ -36,6 +55,27 @@ jobs:
           cmake --preset asan -DGP_WARNINGS_AS_ERRORS=ON
           cmake --build --preset asan
           ctest --preset asan
+
+  macos-release:
+    name: macOS release universal (arm64 + x86_64, macOS 12+)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .cpm-cache
+          key: cpm-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
+      - name: Instalar Ninja
+        run: brew install ninja
+      - name: release — configurar, compilar, testear
+        run: |
+          cmake --preset release -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0
+          cmake --build --preset release
+          ctest --preset release
+      - name: Comprobar binario universal
+        run: |
+          app=build/release/GhostProducerApp_artefacts/Release/GhostProducer.app/Contents/MacOS/GhostProducer
+          if [ -f "$app" ]; then lipo -archs "$app" | grep -q x86_64 && lipo -archs "$app" | grep -q arm64; else echo "App aún no existe (F0-T6)"; fi
 
   linux-headless:
     name: Linux headless (tests + ASan + TSan)
